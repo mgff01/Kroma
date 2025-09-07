@@ -5,8 +5,8 @@
 // =================================================================================
 // Definições de Pinos para o ESP32
 // =================================================================================
-#define I2C_SDA_PIN 21   // Pino SDA para o display OLED (I2C_0)
-#define I2C_SCL_PIN 22   // Pino SCL para o display OLED (I2C_0)
+#define I2C_SDA_PIN 21    // Pino SDA para o display OLED (I2C_0)
+#define I2C_SCL_PIN 22    // Pino SCL para o display OLED (I2C_0)
 #define I2C_2_SDA_PIN 25 // Pino SDA para o sensor de cor (I2C_1)
 #define I2C_2_SCL_PIN 26 // Pino SCL para o sensor de cor (I2C_1)
 #define LED_PIN 4
@@ -60,11 +60,11 @@ public:
 };
 
 const tcs34725::tcs_agc tcs34725::agc_lst[] = {
-  { TCS34725_GAIN_60X, TCS34725_INTEGRATIONTIME_614MS,     0, 20000 },
-  { TCS34725_GAIN_60X, TCS34725_INTEGRATIONTIME_154MS,  4990, 63000 },
-  { TCS34725_GAIN_16X, TCS34725_INTEGRATIONTIME_154MS, 16790, 63000 },
-  { TCS34725_GAIN_4X,  TCS34725_INTEGRATIONTIME_154MS, 15740, 63000 },
-  { TCS34725_GAIN_1X,  TCS34725_INTEGRATIONTIME_154MS, 15740, 0 }
+  { TCS34725_GAIN_60X, TCS34725_INTEGRATIONTIME_614MS,      0, 20000 },
+  { TCS34725_GAIN_60X, TCS34725_INTEGRATIONTIME_154MS,   4990, 63000 },
+  { TCS34725_GAIN_16X, TCS34725_INTEGRATIONTIME_154MS,  16790, 63000 },
+  { TCS34725_GAIN_4X,  TCS34725_INTEGRATIONTIME_154MS,  15740, 63000 },
+  { TCS34725_GAIN_1X,  TCS34725_INTEGRATIONTIME_154MS,  15740, 0 }
 };
 
 tcs34725::tcs34725() : agc_cur(0), isAvailable(0), isSaturated(0) {}
@@ -117,70 +117,62 @@ void tcs34725::getData(void) {
 tcs34725 rgb_sensor;
 
 // =================================================================================
-// NOVAS FUNÇÕES DE MAPEAMENTO E CONVERSÃO DE COR (HSV)
+// NOVA LÓGICA DE DETECÇÃO DE COR POR PROXIMIDADE RGB
 // =================================================================================
 
-// Estrutura para armazenar valores HSV
-struct HsvColor {
-    double h; // Matiz (0-360)
-    double s; // Saturação (0-100)
-    double v; // Valor (0-100)
+// Estrutura para definir uma cor de referência com seu nome e valores RGB
+struct ColorReference {
+    const char* name;
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
 };
 
-// Função para converter RGB para HSV
-HsvColor rgbToHsv(uint8_t r, uint8_t g, uint8_t b) {
-    HsvColor hsv;
-    double rd = (double) r / 255;
-    double gd = (double) g / 255;
-    double bd = (double) b / 255;
-    double cmax = max(rd, max(gd, bd));
-    double cmin = min(rd, min(gd, bd));
-    double diff = cmax - cmin;
-
-    // Calcula a Matiz (Hue)
-    if (cmax == cmin) hsv.h = 0;
-    else if (cmax == rd) hsv.h = fmod(60 * ((gd - bd) / diff) + 360, 360);
-    else if (cmax == gd) hsv.h = fmod(60 * ((bd - rd) / diff) + 120, 360);
-    else if (cmax == bd) hsv.h = fmod(60 * ((rd - gd) / diff) + 240, 360);
-
-    // Calcula a Saturação (Saturation)
-    if (cmax == 0) hsv.s = 0;
-    else hsv.s = (diff / cmax) * 100;
-
-    // Calcula o Valor (Value)
-    hsv.v = cmax * 100;
-
-    return hsv;
-}
-
-// Função para identificar o nome da cor com base em HSV
+// Função para identificar o nome da cor mais próxima
 const char* getColorName(uint8_t r, uint8_t g, uint8_t b) {
-    HsvColor hsv = rgbToHsv(r, g, b);
+    // Lista de cores de referência.
+    // As cores solicitadas foram adicionadas e melhoradas.
+    // Você pode ajustar estes valores para calibrar ainda melhor com suas amostras!
+    ColorReference colors[] = {
+        {"Magenta",     65,  30,  24}, // Cor adicionada
+        {"Laranja",     85,  27,  18}, // Cor adicionada
+        {"Amarelo",     57,  34,  15}, // Cor melhorada
+        {"Azul",        21,  26,  21}, // Cor melhorada
+        {"Vermelho",   100,  20,  20}, // Valor genérico para vermelho
+        {"Verde",       20, 100,  20}, // Valor genérico para verde
+        {"Branco",     220, 220, 220}, // Valor para branco
+        {"Cinza",       80,  80,  80}, // Valor para cinza
+        {"Preto",       15,  15,  15}  // Valor para preto
+    };
 
-    // 1. Checa por Preto, Branco e Cinza primeiro
-    if (hsv.v < 15) return "Preto";
-    if (hsv.s < 15 && hsv.v > 85) return "Branco";
-    if (hsv.s < 10) return "Cinza";
+    long minDistance = -1;
+    const char* closestColorName = "Nao Ident.";
 
-    // 2. Checa as faixas de Matiz (Hue) para as cores primárias/secundárias
-    // Estes valores podem ser ajustados para melhor precisão!
-    if ((hsv.h >= 0 && hsv.h <= 15) || (hsv.h >= 345 && hsv.h <= 360)) {
-        return "Vermelho";
-    }
-    if (hsv.h >= 40 && hsv.h <= 75) {
-        return "Amarelo";
-    }
-    if (hsv.h >= 80 && hsv.h <= 160) {
-        return "Verde";
-    }
-    if (hsv.h >= 200 && hsv.h <= 260) {
-        return "Azul";
+    // Itera por todas as cores de referência para encontrar a mais próxima
+    for (int i = 0; i < sizeof(colors) / sizeof(colors[0]); i++) {
+        // Calcula a "distância" euclidiana ao quadrado entre a cor lida e a cor de referência.
+        // Usamos o quadrado para evitar o cálculo da raiz quadrada (sqrt), que é mais lento.
+        long dr = r - colors[i].r;
+        long dg = g - colors[i].g;
+        long db = b - colors[i].b;
+        long distance = dr * dr + dg * dg + db * db;
+
+        // Se a distância atual é menor que a mínima encontrada até agora, atualiza.
+        if (minDistance == -1 || distance < minDistance) {
+            minDistance = distance;
+            closestColorName = colors[i].name;
+        }
     }
     
-    // Se não se encaixar em nenhuma faixa, pode ser outra cor.
-    // Pode-se adicionar mais faixas aqui (ex: Laranja, Roxo, etc.)
-    return "Nao Ident.";
+    // Se a distância mínima ainda for muito grande, a cor pode ser considerada não identificada.
+    // Este limiar (threshold) pode ser ajustado conforme a necessidade.
+    if (minDistance > 10000) {
+       // return "Nao Ident."; // Descomente esta linha para um filtro mais rigoroso
+    }
+
+    return closestColorName;
 }
+
 
 String rgbToHex(uint8_t r, uint8_t g, uint8_t b) {
     char hexColor[8];
@@ -237,23 +229,20 @@ void loop(void) {
   uint8_t g8 = map(g_clamped, 0, rgb_sensor.saturation, 0, 255);
   uint8_t b8 = map(b_clamped, 0, rgb_sensor.saturation, 0, 255);
 
-  // *** USA A NOVA LÓGICA DE DETECÇÃO ***
+  // *** USA A NOVA LÓGICA DE DETECÇÃO DE COR ***
   const char* colorName = getColorName(r8, g8, b8);
   String hexColor = rgbToHex(r8, g8, b8);
   
-  // Converte RGB para HSV para fins de depuração
-  HsvColor hsv = rgbToHsv(r8,g8,b8);
-
   // --- Imprime apenas o nome da cor no Monitor Serial ---
   Serial.println(colorName);
 
   // --- Atualiza o Display OLED ---
   u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_logisoso18_tr); 
+  u8g2.setFont(u8g2_font_logisoso18_tr);  
   u8g2.setCursor(0, 22);
   u8g2.print(colorName);
   u8g2.drawHLine(0, 28, 128);
-  u8g2.setFont(u8g2_font_t0_11b_tf); 
+  u8g2.setFont(u8g2_font_t0_11b_tf);  
   u8g2.setCursor(0, 46);
   u8g2.print("Hex: ");
   u8g2.print(hexColor);
@@ -265,4 +254,3 @@ void loop(void) {
 
   delay(1000);
 }
-
