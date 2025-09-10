@@ -134,14 +134,14 @@ const char* getColorName(uint8_t r, uint8_t g, uint8_t b) {
     // As cores solicitadas foram adicionadas e melhoradas.
     // Você pode ajustar estes valores para calibrar ainda melhor com suas amostras!
     ColorReference colors[] = {
-        {"Magenta",     65,  30,  24}, // Cor adicionada
-        {"Laranja",     85,  27,  18}, // Cor adicionada
+        {"Magenta",     65,  31,  28}, // Cor adicionada
+        {"Laranja",     55,  24,  18}, // Cor adicionada
         {"Amarelo",     57,  34,  15}, // Cor melhorada
         {"Azul",        21,  26,  21}, // Cor melhorada
-        {"Vermelho",   100,  20,  20}, // Valor genérico para vermelho
-        {"Verde",       20, 100,  20}, // Valor genérico para verde
+        {"Vermelho",   150,  20,  20}, // Valor para vermelho
+        {"Verde",       20,  70,  20}, // Valor para verde
         {"Branco",     220, 220, 220}, // Valor para branco
-        {"Cinza",       80,  80,  80}, // Valor para cinza
+        {"Preto",       80,  80,  80}, // Valor para preto dnv pq o Cinza ta bugado
         {"Preto",       15,  15,  15}  // Valor para preto
     };
 
@@ -167,7 +167,7 @@ const char* getColorName(uint8_t r, uint8_t g, uint8_t b) {
     // Se a distância mínima ainda for muito grande, a cor pode ser considerada não identificada.
     // Este limiar (threshold) pode ser ajustado conforme a necessidade.
     if (minDistance > 10000) {
-       // return "Nao Ident."; // Descomente esta linha para um filtro mais rigoroso
+        return "Nao Ident."; // Descomente esta linha para um filtro mais rigoroso
     }
 
     return closestColorName;
