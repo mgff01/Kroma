@@ -134,10 +134,10 @@ const char* getColorName(uint8_t r, uint8_t g, uint8_t b) {
     // As cores solicitadas foram adicionadas e melhoradas.
     // Você pode ajustar estes valores para calibrar ainda melhor com suas amostras!
     ColorReference colors[] = {
-        {"Magenta",     65,  31,  28}, // Cor adicionada
+        {"Magenta",     48,  31,  28}, // Cor adicionada
         {"Laranja",     55,  24,  18}, // Cor adicionada
-        {"Amarelo",     57,  34,  15}, // Cor melhorada
-        {"Azul",        21,  26,  21}, // Cor melhorada
+        {"Amarelo",     34,  34,  15}, // Cor melhorada
+        {"Azul",        29,  20,  19}, // Cor melhorada
         {"Vermelho",   150,  20,  20}, // Valor para vermelho
         {"Verde",       20,  70,  20}, // Valor para verde
         {"Branco",     220, 220, 220}, // Valor para branco
