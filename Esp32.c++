@@ -139,7 +139,7 @@ const char* getColorName(uint8_t r, uint8_t g, uint8_t b) {
         {"Amarelo",     34,  34,  15}, // Cor melhorada
         {"Azul",        29,  20,  19}, // Cor melhorada
         {"Vermelho",   150,  20,  20}, // Valor para vermelho
-        {"Verde",       20,  70,  20}, // Valor para verde
+        {"Verde",       25,  25,  20}, // Valor para verde
         {"Branco",     220, 220, 220}, // Valor para branco
         {"Preto",       80,  80,  80}, // Valor para preto dnv pq o Cinza ta bugado
         {"Preto",       15,  15,  15}  // Valor para preto
